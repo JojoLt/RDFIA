@@ -3,3 +3,6 @@ data*
 *data
 *data*
 __pycache__
+/.ipynb_checkpoints*
+TME/TP1/.ipynb_checkpoints/TP1-2-checkpoint.ipynb
+*.ipynb_checkpoints*
