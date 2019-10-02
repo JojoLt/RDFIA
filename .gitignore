@@ -6,3 +6,7 @@ __pycache__
 /.ipynb_checkpoints*
 TME/TP1/.ipynb_checkpoints/TP1-2-checkpoint.ipynb
 *.ipynb_checkpoints*
+.DS_Store
+TME/.DS_Store
+TME/*/.DS_Store
+*.DS_Store*
