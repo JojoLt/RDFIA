@@ -17,6 +17,7 @@ def compute_visual_dict(sift, n_clusters=1000, n_init=1, verbose=1):
     sift = sift[ids]
     
     kmeans = KMeans(n_clusters=n_clusters, n_init = n_init).fit(sift)
-    kmeans.cluster_centers_ = np.append(kmeans.cluster_centers_,np.zeros((1,sift.shape[1])))
-    return kmeans
+    cluster_centers = list(kmeans.cluster_centers_)
+    cluster_centers.append([0 for i in range(len(cluster_centers[0]))])
+    return np.array(cluster_centers)
     # TODO compute kmeans on `sift`, get cluster centers, add zeros vector
