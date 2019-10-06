@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as mplt
+plt = mplt
 import matplotlib
 #from tqdm import tqdm
 from glob import glob
@@ -368,6 +369,8 @@ def display_images(images):
     mplt.show()
 
 
+
+
 def display_vdregions(images, colors=None):
     n_images,w,h = images.shape
     n = int(np.ceil(np.sqrt(n_images)))
@@ -377,8 +380,8 @@ def display_vdregions(images, colors=None):
         j = k // n
         im[i*w:i*w+w, j*h:j*h+h] = images[k]
 
-    fig, ax = plt.subplots(1)
-    plt.axis('off')
+    fig, ax = mplt.subplots(1)
+    mplt.axis('off')
     ax.imshow(im, cmap='gray', vmin=0, vmax=255)
 
     for k in range(n_images):
@@ -391,7 +394,7 @@ def display_vdregions(images, colors=None):
             facecolor='none')
         ax.add_patch(rect)
 
-    plt.show()
+    mplt.show()
 
 def display_vdregions_image(im, vdict, sift, feats, colors=None, vdregions=None):
     from sklearn.metrics.pairwise import euclidean_distances
@@ -407,15 +410,15 @@ def display_vdregions_image(im, vdict, sift, feats, colors=None, vdregions=None)
                   'tab:cyan',
                   'tab:gray']
 
-    plt.figure()
-    plt.bar(range(feats.shape[0]), feats)
-    plt.show()
+    mplt.figure()
+    mplt.bar(range(feats.shape[0]), feats)
+    mplt.show()
 
     ids = feats.argsort()[-9:][::-1]
     if vdregions is not None:
         vdregions = vdregions[ids]
 
-    fig, ax = plt.subplots(1)
+    fig, ax = mplt.subplots(1)
     fig.set_size_inches(10, 10)
     ax.imshow(im, cmap='gray', vmin=0, vmax=255)
 
@@ -442,8 +445,8 @@ def display_vdregions_image(im, vdict, sift, feats, colors=None, vdregions=None)
                 facecolor='none')
             ax.add_patch(rect)
 
-    plt.axis('off')
-    plt.show()
+    mplt.axis('off')
+    mplt.show()
 
     for i in range(9):
         if vdregions[i] is None:

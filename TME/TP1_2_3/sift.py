@@ -6,6 +6,7 @@
 
 import matplotlib
 import matplotlib.pyplot as mplt
+plt = mplt
 import numpy as np
 from tools import *
 
