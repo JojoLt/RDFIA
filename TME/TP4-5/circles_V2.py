@@ -38,29 +38,19 @@ def loss_accuracy(Yhat, Y):
     acc = int((indsY==indsYhat).sum())/len(indsY)
     for i,k in enumerate(indsY) :
         L+=-torch.log(Yhat[i][k])
-    L = torch.Tensor(L,requires_grad=True)
-    print("L=",L)
+        #print(L)
+    L = torch.Tensor([L])
+    #print("L=",L)
     return L, acc
 
-def backward(params, outputs, Y):
-    grads = {}
-    L,_ = loss_accuracy(outputs["yhat"],Y)
-    print("Loss : ",L)
-    L.backward()
-    for k in params.keys():
-        grads[k] = params[k].grad
-    print(grads)
-    # TODO remplir avec les paramètres Wy, Wh, by, bh
-    # grads["Wy"] = ...
 
-    return grads
-
-def sgd(params, grads, eta):
+def sgd(params, eta):
     with torch.no_grad():
         for k in params.keys():
-            print("nanaanana : ",k,grads[k])
-            params[k]-= eta*grads[k]
-
+            print(params[k])
+            print(params[k].grad)
+            params[k]-= eta*params[k].grad
+            params[k].grad.zero_()
     return params
 
 
@@ -79,10 +69,11 @@ if __name__ == '__main__':
 
     # Premiers tests, code à modifier
     params = init_params(nx, nh, ny)
-    Yhat, outs = forward(params, data.Xtrain)
-    L, _ = loss_accuracy(Yhat, data.Ytrain)
-    grads = backward(params, outs, data.Ytrain)
-    params = sgd(params, grads, eta)
+    #Yhat, outs = forward(params, data.Xtrain)
+    #L, _ = loss_accuracy(Yhat, data.Ytrain)
+    #L.backward()
+    #grads = backward(params, outs, data.Ytrain)
+    #params = sgd(params, eta)
 
     nb_epoch = 1000
     batch_x =[]
@@ -91,9 +82,13 @@ if __name__ == '__main__':
         for b in range(0,N-Nbatch,Nbatch):
             X = data.Xtrain[b:b+Nbatch]
             Y = data.Ytrain[b:b+Nbatch]
-            Yhat, outs = forward(params, X)
-            backward(params,outs,Y)
-            params = sgd(params,grads,eta)
+            Yhat, outs = forward(params, X) 
+            L, _ = loss_accuracy(Yhat, Y)
+            L.requires_grad=True
+            for k in params.keys():
+                params[k].retain_grad()
+            L.backward()
+            params = sgd(params,eta)
 
 
     # attendre un appui sur une touche pour garder les figures
