@@ -27,24 +27,21 @@ class ConvNet(nn.Module):
         # On défini d'abord les couches de convolution et de pooling comme un
         # groupe de couches `self.features`
         self.features = nn.Sequential(
-            nn.Conv2d(3, 32, (5, 5), stride=1, padding=2),
-            nn.ReLU(),
+            nn.Conv2d(1, 6, (5, 5), stride=1, padding=2),
+            nn.Tanh(),
             nn.MaxPool2d((2, 2), stride=2, padding=0),
-
-            nn.Conv2d(32, 64, (5, 5), stride=1, padding=0),
-            nn.ReLU(),
-            nn.MaxPool2d((2, 2), stride=2, padding=0),
-
-            nn.Conv2d(64, 64, (5, 5), stride=1, padding=0),
-            nn.ReLU(),
+            nn.Conv2d(6, 16, (5, 5), stride=1, padding=0),
+            nn.Tanh(),
             nn.MaxPool2d((2, 2), stride=2, padding=0),
         )
         # On défini les couches fully connected comme un groupe de couches
         # `self.classifier`
         self.classifier = nn.Sequential(
-            nn.Linear(400, 1000),
-            nn.ReLU(),
-            nn.Linear(1000, 10),
+            nn.Linear(400, 120),
+            nn.Tanh(),
+            nn.Linear(120, 84),
+            nn.Tanh(),
+            nn.Linear(84, 10)
             # Rappel : Le softmax est inclus dans la loss, ne pas le mettre ici
         )
 
@@ -64,15 +61,15 @@ def get_dataset(batch_size, path):
     Cette fonction charge le dataset et effectue des transformations sur chaqu
     image (listées dans `transform=...`).
     """
-    train_dataset = datasets.CIFAR10(path, train=True, download=True,
+    train_dataset = datasets.MNIST(path, train=True, download=True,
         transform=transforms.Compose([
             transforms.ToTensor()
         ]))
-    val_dataset = datasets.CIFAR10(path, train=False, download=True,
+    val_dataset = datasets.MNIST(path, train=False, download=True,
         transform=transforms.Compose([
             transforms.ToTensor()
         ]))
-    
+
     train_loader = torch.utils.data.DataLoader(train_dataset,
                         batch_size=batch_size, shuffle=True, pin_memory=CUDA, num_workers=2)
     val_loader = torch.utils.data.DataLoader(val_dataset,
@@ -171,8 +168,7 @@ def main(params):
 
     # On récupère les données
     train, test = get_dataset(params.batch_size, params.path)
-    return train
-    
+
     # init plots
     plot = AccLossPlot()
     global loss_plot
@@ -187,7 +183,7 @@ def main(params):
         top1_acc_test, top5_acc_test, loss_test = epoch(test, model, criterion)
         # plot
         plot.update(loss.avg, loss_test.avg, top1_acc.avg, top1_acc_test.avg)
-    
+
 
 if __name__ == '__main__':
 
@@ -204,6 +200,6 @@ if __name__ == '__main__':
         CUDA = True
         cudnn.benchmark = True
 
-    t =main(args)
+    main(args)
 
     input("done")
