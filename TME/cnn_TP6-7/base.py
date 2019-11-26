@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
+import torch.optim.lr_scheduler
 import torch.utils.data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
@@ -28,22 +29,26 @@ class ConvNet(nn.Module):
         # groupe de couches `self.features`
         self.features = nn.Sequential(
             nn.Conv2d(3, 32, (5, 5), stride=1, padding=2),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d((2, 2), stride=2, padding=0),
 
-            nn.Conv2d(32, 64, (5, 5), stride=1, padding=0),
+            nn.Conv2d(32, 64, (5, 5), stride=1, padding=2),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d((2, 2), stride=2, padding=0),
 
-            nn.Conv2d(64, 64, (5, 5), stride=1, padding=0),
+            nn.Conv2d(64, 64, (5, 5), stride=1, padding=2),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.MaxPool2d((2, 2), stride=2, padding=0),
+            nn.MaxPool2d((2, 2), stride=2, padding=0,ceil_mode=True),
         )
         # On défini les couches fully connected comme un groupe de couches
         # `self.classifier`
         self.classifier = nn.Sequential(
-            nn.Linear(400, 1000),
+            nn.Linear(4*4*64, 1000),
             nn.ReLU(),
+            nn.Dropout(p=0.5),
             nn.Linear(1000, 10),
             # Rappel : Le softmax est inclus dans la loss, ne pas le mettre ici
         )
@@ -66,11 +71,16 @@ def get_dataset(batch_size, path):
     """
     train_dataset = datasets.CIFAR10(path, train=True, download=True,
         transform=transforms.Compose([
-            transforms.ToTensor()
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomCrop((28,28)),
+            transforms.ToTensor(), 
+            transforms.Normalize([0.491,0.482,0.447],[0.202,0.199,0.201], inplace=True)
         ]))
     val_dataset = datasets.CIFAR10(path, train=False, download=True,
         transform=transforms.Compose([
-            transforms.ToTensor()
+            transforms.CenterCrop((28,28)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.491,0.482,0.447],[0.202,0.199,0.201], inplace=True)        
         ]))
     
     train_loader = torch.utils.data.DataLoader(train_dataset,
@@ -163,7 +173,9 @@ def main(params):
     # define model, loss, optim
     model = ConvNet()
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), params.lr)
+    optimizer = torch.optim.SGD(model.parameters(), params.lr,momentum=0.5)
+    lr_sched = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+    lr_sched.step()
 
     if CUDA: # si on fait du GPU, passage en CUDA
         model = model.cuda()
@@ -171,7 +183,6 @@ def main(params):
 
     # On récupère les données
     train, test = get_dataset(params.batch_size, params.path)
-    return train
     
     # init plots
     plot = AccLossPlot()
@@ -204,6 +215,6 @@ if __name__ == '__main__':
         CUDA = True
         cudnn.benchmark = True
 
-    t =main(args)
+    main(args)
 
     input("done")
