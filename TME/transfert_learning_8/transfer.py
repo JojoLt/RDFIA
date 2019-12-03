@@ -22,10 +22,7 @@ os.environ["TORCH_HOME"] = "/tmp/torch"
 PRINT_INTERVAL = 50
 CUDA = False
 
-    # Cette fonction permet de recopier 3 fois une image qui
-    # ne serait que sur 1 channel (donc image niveau de gris)
-    # pour la "transformer" en image RGB. Utilisez la avec
-    # transform.Lambda
+    
 
 class VGG16relu7(torch.nn.Module):
     def __init__(self,vgg16):
@@ -44,6 +41,10 @@ class VGG16relu7(torch.nn.Module):
 def get_dataset(batch_size, path):
 
     def duplicateChannel(img):
+        # Cette fonction permet de recopier 3 fois une image qui
+        # ne serait que sur 1 channel (donc image niveau de gris)
+        # pour la "transformer" en image RGB. Utilisez la avec
+        # transform.Lambda
         img = img.convert('L')
         np_img = np.array(img, dtype=np.uint8)
         np_img = np.dstack([np_img, np_img, np_img])
@@ -78,53 +79,38 @@ def get_dataset(batch_size, path):
 
 def extract_features(data, model):
     # TODO init features matrices
-    X = []
-    y = []
-    for i, (x, target) in enumerate(data):
-        if i % PRINT_INTERVAL == 0:
-            print('Batch {0:03d}/{1:03d}'.format(i, len(data)))
-        if CUDA:
-            x = x.cuda()
-        # TODO Feature extraction à faire
-        X.append(model.forward(x))
-        y.append(target)
+    X = np.zeros((len(data),data.batch_size,4096)) # 4096 dimension de l'avant derniere couche de VGG16.
+    y = np.zeros((len(data),data.batch_size))
+    model.eval()
+    with torch.no_grad():
+        for i, (x, target) in enumerate(data):
+            if i % PRINT_INTERVAL == 0:
+                print('Batch {0:03d}/{1:03d}'.format(i, len(data)))
+            if CUDA:
+                x = x.cuda()
+            
+            features = model(x)
+            X[i] = features.detach().numpy()
+            y[i]=target.detach().numpy()
+            print("i=",i)
+            
     return X, y
 
 
-def main(params):
-    pass
-    print('Instanciation de VGG16')
-    vgg16 = models.vgg16(pretrained=True)
+def reshape_no_batch(X,y):
+    # Enleve les batch et reshape les données numpy. 
+    X = X.reshape((X.shape[0]*X.shape[1],X.shape[3]))
+    y = y.reshape((y.shape[0]*y.shape[1]))
 
-    print('Instanciation de VGG16relu7')
-    model = VGG16relu7(vgg16) # TODO À remplacer par un reseau tronché pour faire de la feature extraction
+    return X,y
 
-    model.eval()
-    if CUDA: # si on fait du GPU, passage en CUDA
-        model = model.cuda()
-
-    # On récupère les données
-    print('Récupération des données')
-    train, test = get_dataset(params.batch_size, params.path)
-
-    # Extraction des features
-    print('Feature extraction')
-    X_train, y_train = extract_features(train, model)
-    X_test, y_test = extract_features(test, model)
-
-    # TODO Apprentissage et évaluation des SVM à faire
-    print('Apprentissage des SVM')
-    svm = LinearSVC(C=1.0)
-    svm.fit(X_train,y_train)
-    accuracy = svm.score(X_test,y_test)
-    print("SVM accuraccy :",accuracy)
 
 if __name__ == '__main__':
 
     # Paramètres en ligne de commande
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', default='15SceneData', type=str, metavar='DIR', help='path to dataset')
-    parser.add_argument('--batch-size', default=8, type=int, metavar='N', help='mini-batch size (default: 8)')
+    parser.add_argument('--batch-size', default=20, type=int, metavar='N', help='mini-batch size (default: 8)')
     parser.add_argument('--cuda', dest='cuda', action='store_true', help='activate GPU acceleration')
     
     args = parser.parse_args()
@@ -150,8 +136,27 @@ if __name__ == '__main__':
 
     # Extraction des features
     print('Feature extraction')
-    X_train, y_train = extract_features(train, model)
-    X_test, y_test = extract_features(test, model)
+    if not os.path.exists('numpy_object/X_train.npy') : 
+        X_train, y_train = extract_features(train, model)
+        np.save('numpy_object/X_train.npy', X_train)
+        np.save('numpy_object/y_train.npy', y_train)
+    else:
+        print("Chargement des fichiers X_train.npy et y_train.npy")
+        X_train = np.load('numpy_object/X_train.npy')
+        y_train = np.load('numpy_object/y_train.npy')
+
+    X_train,y_train = reshape_no_batch(X_train,y_train)
+
+    if not os.path.exists('numpy_object/X_test.npy') : 
+        X_test, y_test = extract_features(test, model)
+        np.save('numpy_object/X_test.npy', X_test)
+        np.save('numpy_object/y_test.npy', y_test)
+    else:
+        X_test = np.load('numpy_object/X_test.npy')
+        y_test = np.load('numpy_object/y_test.npy')
+
+    X_test,y_test = reshape_no_batch(X_test,y_test)
+    
 
     # TODO Apprentissage et évaluation des SVM à faire
     print('Apprentissage des SVM')
