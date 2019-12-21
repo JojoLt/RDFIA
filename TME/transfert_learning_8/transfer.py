@@ -16,6 +16,7 @@ import torchvision
 import numpy as np
 import pickle,PIL
 from sklearn.svm import LinearSVC
+import matplotlib.pyplot as plt
 
 torchvision.models.vgg.model_urls["vgg16"] = "http://webia.lip6.fr/~robert/cours/rdfia/vgg16-397923af.pth"
 os.environ["TORCH_HOME"] = "/tmp/torch"
@@ -90,8 +91,11 @@ def extract_features(data, model):
                 x = x.cuda()
             
             features = model(x)
-            X[i] = features.detach().numpy()
-            y[i]=target.detach().numpy()
+            try:
+                X[i] = features.detach().numpy()
+                y[i]=target.detach().numpy()
+            except:
+                print("on ignore l'itération : ",i)
             print("i=",i)
             
     return X, y
@@ -99,7 +103,7 @@ def extract_features(data, model):
 
 def reshape_no_batch(X,y):
     # Enleve les batch et reshape les données numpy. 
-    X = X.reshape((X.shape[0]*X.shape[1],X.shape[3]))
+    X = X.reshape((X.shape[0]*X.shape[1],X.shape[2]))
     y = y.reshape((y.shape[0]*y.shape[1]))
 
     return X,y
@@ -163,6 +167,20 @@ if __name__ == '__main__':
     svm = LinearSVC(C=1.0)
     svm.fit(X_train,y_train)
     accuracy = svm.score(X_test,y_test)
-    print("SVM accuraccy :",accuracy)
+    print("SVM accuraccy C=1 :",accuracy)
 
+    liste_C = [1e-3, 1e-2, 1e-1, 1, 10, 100, 1000]
+    accuracy = []
+    for c in liste_C:
+
+        svm = LinearSVC(C=c)
+        svm.fit(X_train,y_train)
+        accuracy.append(svm.score(X_test,y_test))
+    
+    plt.plot(liste_C,accuracy)
+    plt.ylabel('SVM Accuracy')
+    plt.xlabel('paramètre C')
+    plt.title('Exploration du paramètre C du SVM.')
+    plt.show()
+    
     input("done")
