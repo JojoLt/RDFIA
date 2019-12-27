@@ -25,7 +25,7 @@ CUDA = False
 imagenet_classes= pickle.load(open('imagenet_classes.pkl','rb')) # chargement des classes
 
 
-img = PIL.Image.open("image_vgg/melo.jpg").convert('RGB')
+img = PIL.Image.open("image_vgg/jojoyaya.jpg").convert('RGB')
 
 img.show()
 #img = img.resize((224,224),PIL.Image.BILINEAR)
